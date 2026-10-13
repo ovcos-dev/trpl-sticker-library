@@ -1,0 +1,1 @@
+app.executeCommand(app.findMenuCommandId("Reveal Layer Source in Project"));
