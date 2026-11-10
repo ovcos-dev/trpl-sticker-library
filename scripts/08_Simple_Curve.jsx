@@ -1,12 +1,9 @@
 (function () {
 
-    app.beginUndoGroup("Create Simple Curve");
-
     var comp = app.project.activeItem;
 
     if (!(comp instanceof CompItem)) {
         alert("먼저 작업할 Composition을 활성화해주세요.");
-        app.endUndoGroup();
         return;
     }
 
@@ -72,6 +69,10 @@
     // ==================================================
     // Shape Layer
     // ==================================================
+
+    // 여기부터 프로젝트를 수정하므로 Undo 그룹 시작
+    app.beginUndoGroup("Create Simple Curve");
+    try {
 
     var shapeLayer = comp.layers.addShape();
     shapeLayer.name = curveName;
@@ -177,8 +178,7 @@
 
     if (!finalPath || !finalPath.setValue) {
         alert("Path Property를 찾을 수 없습니다.");
-        app.endUndoGroup();
-        return;
+        return; // finally에서 Undo 그룹 닫힘
     }
 
     // ==================================================
@@ -294,6 +294,10 @@
     p2.selected = false;
     shapeLayer.selected = true;
 
-    app.endUndoGroup();
+    } catch (err) {
+        alert("에러: " + err.toString() + " (line " + err.line + ")");
+    } finally {
+        app.endUndoGroup();
+    }
 
 })();

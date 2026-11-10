@@ -1,6 +1,4 @@
 (function() {
-    app.beginUndoGroup("Optimize and then Clear Expressions");
-
     var comp = app.project.activeItem;
     if (!(comp instanceof CompItem)) {
         alert("컴포지션을 선택해주세요.");
@@ -13,6 +11,8 @@
         return;
     }
 
+    app.beginUndoGroup("Optimize and then Clear Expressions");
+    try {
     // --- 1단계: 키프레임 최적화 (중간값 삭제) 진행 ---
     for (var i = 0; i < selectedLayers.length; i++) {
         var layer = selectedLayers[i];
@@ -39,6 +39,12 @@
         } else {
             searchAndClearExpression(layer);
         }
+    }
+    } catch (err) {
+        alert("에러: " + err.toString() + " (line " + err.line + ")");
+        return;
+    } finally {
+        app.endUndoGroup();
     }
 
     // [함수] 1단계용: 속성 탐색 및 최적화
@@ -115,6 +121,5 @@
         return v1 === v2;
     }
 
-    app.endUndoGroup();
     alert("순차 완료: 1. 키프레임 최적화 -> 2. 익스프레션 삭제");
 })();

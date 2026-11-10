@@ -16,7 +16,7 @@
         }
 
         app.beginUndoGroup("Add Slider to Text");
-
+        try {
         for (var i = 0; i < selectedLayers.length; i++) {
             var layer = selectedLayers[i];
 
@@ -35,8 +35,11 @@
 
             layer.property("Source Text").expression = expr;
         }
-
-        app.endUndoGroup();
+        } catch (err) {
+            alert("에러: " + err.toString() + " (line " + err.line + ")");
+        } finally {
+            app.endUndoGroup();
+        }
     }
 
     addSliderToTextLayer();

@@ -1,5 +1,6 @@
 {
 app.beginUndoGroup("Auto Monospace FINAL STABLE v3");
+try {
 
 var comp = app.project.activeItem;
 
@@ -99,6 +100,9 @@ if (!(comp instanceof CompItem)) {
         out.moveBefore(base);
     }
 }
-
-app.endUndoGroup();
+} catch (err) {
+    alert("에러: " + err.toString() + " (line " + err.line + ")");
+} finally {
+    app.endUndoGroup();
+}
 }

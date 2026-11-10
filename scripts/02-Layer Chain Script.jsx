@@ -20,14 +20,18 @@
 
     // 작업을 Undo 그룹으로 묶기
     app.beginUndoGroup("Layer Chain");
-
-    // 선택된 순서대로 부모-자식 관계 설정
-    for (var i = 0; i < selectedLayers.length - 1; i++) {
-        selectedLayers[i].parent = selectedLayers[i + 1];
+    try {
+        // 선택된 순서대로 부모-자식 관계 설정
+        for (var i = 0; i < selectedLayers.length - 1; i++) {
+            selectedLayers[i].parent = selectedLayers[i + 1];
+        }
+    } catch (err) {
+        alert("에러: " + err.toString() + " (line " + err.line + ")");
+        return;
+    } finally {
+        // 작업 완료 (에러가 나도 Undo 그룹은 반드시 닫음)
+        app.endUndoGroup();
     }
-
-    // 작업 완료
-    app.endUndoGroup();
 
     alert("레이어가 선택된 순서대로 체인되었습니다.");
 })();

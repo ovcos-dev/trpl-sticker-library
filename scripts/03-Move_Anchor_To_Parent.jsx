@@ -1,6 +1,4 @@
 (function() {
-    app.beginUndoGroup("Move Anchor Point to Parent World Position");
-
     var comp = app.project.activeItem;
     if (!(comp instanceof CompItem)) {
         alert("컴포지션을 선택해 주세요.");
@@ -13,6 +11,8 @@
         return;
     }
 
+    app.beginUndoGroup("Move Anchor Point to Parent World Position");
+    try {
     for (var i = 0; i < selectedLayers.length; i++) {
         var layer = selectedLayers[i];
         var parentLayer = layer.parent;
@@ -68,6 +68,9 @@
             posProp.setValue([curP[0] + delta[0], curP[1] + delta[1], (curP.length > 2 ? curP[2] + delta[2] : 0)]);
         }
     }
-
-    app.endUndoGroup();
+    } catch (err) {
+        alert("에러: " + err.toString() + " (line " + err.line + ")");
+    } finally {
+        app.endUndoGroup();
+    }
 })();

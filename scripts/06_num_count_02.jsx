@@ -68,8 +68,6 @@
         // MAIN FUNCTION
         // -----------------------------
         function applyToSelected() {
-            app.beginUndoGroup("A Text Controller");
-
             var comp = app.project.activeItem;
             if (!(comp instanceof CompItem)) {
                 alert("컴포지션을 선택하세요.");
@@ -83,6 +81,8 @@
             }
 
 
+            app.beginUndoGroup("A Text Controller");
+            try {
             for (var i = 0; i < layers.length; i++) {
 
                 var lyr = layers[i];
@@ -135,8 +135,11 @@
                 // 표현식 적용
                 lyr.property("Source Text").expression = expr;
             }
-
-            app.endUndoGroup();
+            } catch (err) {
+                alert("에러: " + err.toString() + " (line " + err.line + ")");
+            } finally {
+                app.endUndoGroup();
+            }
         }
 
 

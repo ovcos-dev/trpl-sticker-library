@@ -308,12 +308,16 @@
     }
 
     app.beginUndoGroup("SmartTimeRemap");
-
-    for (var ti = 0; ti < taskList.length; ti++) {
-        applyTimeRemap(taskList[ti].layer, taskList[ti].segments, taskList[ti].fps);
+    try {
+        for (var ti = 0; ti < taskList.length; ti++) {
+            applyTimeRemap(taskList[ti].layer, taskList[ti].segments, taskList[ti].fps);
+        }
+    } catch (err) {
+        alert("에러: " + err.toString() + " (line " + err.line + ")");
+        return;
+    } finally {
+        app.endUndoGroup();
     }
-
-    app.endUndoGroup();
 
     alert("완료!\n\nTime Remap 적용 레이어: " + taskList.length + "개");
 
