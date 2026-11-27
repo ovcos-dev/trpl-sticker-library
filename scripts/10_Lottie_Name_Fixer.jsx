@@ -1,5 +1,5 @@
 /*
-10_Lottie_Name_Fixer.jsx  v2.0
+10_Lottie_Name_Fixer.jsx  v2.1
 
 Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립트.
 
@@ -11,7 +11,9 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
   예) "Radial_Gradient Fill 1" 아래의 "Gradient Fill 1"
 
 사용법:
-  1. 검사할 컴포지션을 열고 실행 (안에 들어있는 프리컴프까지 검사)
+  1. 검사 대상 지정 후 실행 (안에 들어있는 프리컴프까지 검사)
+     - 여러 컴프: 프로젝트 패널을 클릭하고 컴프 여러 개 선택
+     - 컴프 하나: 컴포지션을 열거나 프로젝트 패널에서 하나 선택
   2. 충돌 목록 확인 후 정돈 방식 선택 → [정돈]
      - 안전 정돈(기본): 충돌한 이름만 뒤에 [01] 번호 추가
      - 랜덤 이름: 그라디언트 경로의 레이어/그룹/그라디언트 이름 전체를 랜덤으로 변경
@@ -38,9 +40,10 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
 
     // ---------- 수집 ----------
 
-    function collectScopeComps(rootComp) {
+    function collectScopeComps(rootComps) {
         var list = [];
         var visited = {};
+        var r;
 
         function walk(comp) {
             var i, layer;
@@ -57,7 +60,9 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
             }
         }
 
-        walk(rootComp);
+        for (r = 0; r < rootComps.length; r++) {
+            walk(rootComps[r]);
+        }
         return list;
     }
 
@@ -314,7 +319,7 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
     // ---------- 정돈 실행 ----------
 
     // mode: "safe" | "random"
-    function fix(rootComp, mode) {
+    function fix(rootComps, mode) {
         var state = { counter: 1 };
         var renamed = 0;
         var failed = 0;
@@ -322,7 +327,7 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
 
         // 랜덤 모드: 1회차에 경로상의 레이어/그룹/그라디언트 전부 변경
         if (mode === "random") {
-            data = collectAll(collectScopeComps(rootComp));
+            data = collectAll(collectScopeComps(rootComps));
             for (i = 0; i < data.elements.length; i++) {
                 el = data.elements[i];
                 if (el.kind === "comp") {
@@ -339,7 +344,7 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
 
         // 남은 충돌 정리 (안전 모드는 여기서만 처리). 이름이 바뀌면 다시 수집해 재검사
         for (pass = 0; pass < MAX_PASSES; pass++) {
-            data = collectAll(collectScopeComps(rootComp));
+            data = collectAll(collectScopeComps(rootComps));
             conflicts = analyze(data);
             if (conflicts.length === 0) {
                 break;
@@ -357,14 +362,14 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
             }
         }
 
-        data = collectAll(collectScopeComps(rootComp));
+        data = collectAll(collectScopeComps(rootComps));
         return { renamed: renamed, failed: failed, remaining: analyze(data) };
     }
 
     // ---------- UI ----------
 
     // 반환: "safe" | "random" | null(취소)
-    function showDialog(conflicts, gradientCount) {
+    function showDialog(conflicts, gradientCount, compCount) {
         var w = new Window("dialog", SCRIPT_NAME);
         var i, row, list, rbSafe, rbRandom, btns, result = null;
 
@@ -372,6 +377,7 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
         w.alignChildren = ["fill", "top"];
 
         w.add("statictext", undefined,
+            "검사 범위: 컴포지션 " + compCount + "개 (프리컴프 포함) / " +
             "그라디언트 " + gradientCount + "개 중 이름 충돌 " + conflicts.length + "건 " +
             "(Bodymovin export 시 컬러가 꼬일 수 있음)");
 
@@ -411,16 +417,38 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
 
     // ---------- main ----------
 
-    function main() {
-        var comp = app.project ? app.project.activeItem : null;
-        var data, conflicts, mode, res, msg;
+    // 검사 대상 컴프 결정
+    // 1) 프로젝트 패널 활성 + 여러 항목 선택: activeItem이 null이 됨 → 선택된 컴프 전부
+    // 2) 그 외: 지금처럼 activeItem(열린 컴프 또는 단일 선택 컴프)
+    function getRootComps() {
+        var active = app.project ? app.project.activeItem : null;
+        var sel, roots = [], i;
 
-        if (!(comp instanceof CompItem)) {
-            alert("검사할 컴포지션을 연 뒤 다시 실행해 주세요.", SCRIPT_NAME);
+        if (active instanceof CompItem) {
+            return [active];
+        }
+        if (active === null && app.project) {
+            sel = app.project.selection;
+            for (i = 0; i < sel.length; i++) {
+                if (sel[i] instanceof CompItem) {
+                    roots.push(sel[i]);
+                }
+            }
+        }
+        return roots;
+    }
+
+    function main() {
+        var roots = getRootComps();
+        var scope, data, conflicts, mode, res, msg;
+
+        if (roots.length === 0) {
+            alert("검사할 컴포지션을 열거나, 프로젝트 패널에서 컴포지션을 선택한 뒤 다시 실행해 주세요.", SCRIPT_NAME);
             return;
         }
 
-        data = collectAll(collectScopeComps(comp));
+        scope = collectScopeComps(roots);
+        data = collectAll(scope);
         if (data.gradientCount === 0) {
             alert("검사 범위에 Gradient Fill/Stroke가 없습니다.", SCRIPT_NAME);
             return;
@@ -433,14 +461,14 @@ Bodymovin 그라디언트 컬러 꼬임 방지용 이름 검사/정돈 스크립
         }
 
         // 대화상자는 Undo 그룹 밖에서 처리 (Undo 그룹 안에는 이름 변경만)
-        mode = showDialog(conflicts, data.gradientCount);
+        mode = showDialog(conflicts, data.gradientCount, scope.length);
         if (!mode) {
             return;
         }
 
         app.beginUndoGroup(SCRIPT_NAME);
         try {
-            res = fix(comp, mode);
+            res = fix(roots, mode);
         } catch (e) {
             res = null;
             msg = "처리 중 오류가 발생했습니다.\n\n" + e.toString() + (e.line ? "\nLine: " + e.line : "");
